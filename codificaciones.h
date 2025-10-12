@@ -86,4 +86,27 @@ string decodificarM2(string cadena, int n){
     return resultado;
 }
 
+
+/*Esta función recibe una de esas cadenas de bits, luego toma por bloques y decodifica cada caracter,
+añadiendolo al string que representa esa cadena de bits*/
+string convBinInt(string linea){
+    string recibido = "";
+    int len = linea.length();
+    int residuo = len % 8;
+    for(int i = 0; i < (len - residuo); i += 8){
+        string sublinea = "";
+        sublinea = linea.substr(i, 8);
+        int entero = 0;
+        for(int j = 0; j < 8; j++){
+            int aux = sublinea[j] - 48;
+            aux = (pow(2, (7- j))) * aux;
+            entero += aux;
+        }
+        recibido += char(entero);
+    }
+    return recibido;
+
+}
+
+
 #endif // CODIFICACIONES_H
