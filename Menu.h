@@ -166,5 +166,60 @@ string CrearArhcivo(int& n, int &longitud, vector<int>& longitud_cedula, vector<
     return nombre_nuevo_archivo;
 }
 
+void ComprobacionDeArchivo(string& nombre_del_archivo, bool& bandera, int &semilla, int& longitud, vector<int>& longitud_cedula, vector<int>& longitd_clave, vector<int>& longitud_saldo){
+    bool inicio= true;
+    char respuesta= ' ';
+    string verificar_tamaño= "";
+    char respuesta_creacion_archivo= ' ';
+
+    while(inicio){
+        cout <<"\nVerficacion de los archivos del sistema...\n"<<endl;
+        bandera= comprobarLectura(nombre_del_archivo);
+        if(bandera){
+            inicio= false;
+        }else{
+            cout << "Desea crear un archivo? (Ingrese s(si) o n(no)): "; cin >>verificar_tamaño;
+            if(verificar_tamaño.length() > 1){
+                cout << "Solo puedes ingresar una letra" <<endl;
+            }else if (verificar_tamaño.length() ==1 && verificar_tamaño != "\n"){
+                respuesta= verificar_tamaño[0];
+                switch(respuesta){
+                case 's':
+                    nombre_del_archivo = CrearArhcivo(semilla, longitud, longitud_cedula, longitd_clave, longitud_saldo);
+                    break;
+                case 'n':
+                {
+                    bool bandera_interna= true;
+                    while(bandera_interna){
+                        cout<< "Desea salir del programa? (Ingrese s(si) o n(no)):  "; cin >> respuesta_creacion_archivo;
+                        switch(respuesta_creacion_archivo){
+                        case 's':{
+                            inicio=false;
+                            bandera_interna=false;}
+                        break;
+                        case 'n':
+                            bandera_interna= false;
+                            break;
+                        default:
+                            cout << "\nIngresaste una opcion invalida" <<endl;
+                            break;
+                        }
+                        cin.clear();
+                        cin.ignore(255, '\n');
+                    }
+                }
+                break;
+                default:
+                    cout << "\nIngresaste una opcion invalida" <<endl;
+                    cin.clear();
+                    cin.ignore(255, '\n');
+                    break;
+                }
+            }
+        }
+    }
+
+}
+
 
 #endif // MENU_H
