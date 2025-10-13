@@ -1,6 +1,7 @@
 #ifndef MENU_H
 #define MENU_H
 #include <vector>
+#include "codificaciones.h"
 #include <string>
 
 int NumeroLineasArchivo(string nombreArchivo){
@@ -75,5 +76,95 @@ void EscribirContraseñasobreArchivo(string line, string nombreArchivo){
     archivo<<line<<endl;
     archivo.close();
 }
+
+
+bool esNumero(string str){
+    for(char c : str){
+        if((c < '0') || (c > '9')){
+            return false;
+        }
+    }
+    return true;
+}
+
+int numeroLegal(){
+    string entrada;
+    bool entradaValida = false;
+    int numero = 0;
+
+    while(!entradaValida){
+        cout << "Ingrese la semilla de codificacion: ";
+        cin >> entrada;
+
+        entradaValida = esNumero(entrada);
+
+        if(entradaValida){
+            numero = 0;
+            for (char c : entrada){
+                numero = numero * 10 + (c - '0');
+            }
+
+            if(numero < 1){
+
+                entradaValida = false;
+            }
+        }
+
+        if(!entradaValida){
+            cout << "Entrada invalida. Por favor, ingrese un numero entero mayor o igual a 1." << endl;
+        }
+    }
+
+    return numero;
+}
+
+string CrearArhcivo(int& n, int &longitud, vector<int>& longitud_cedula, vector<int>& longitd_clave, vector<int>& longitud_saldo){
+    //Primera parte: Pedir una contraseña para el administrados y encriptarla
+    string nombre_nuevo_archivo= "Nuevo archivo.txt";
+    string lecturaConsola = "";
+    cout << "Ingrese la clave del administrador: " << endl;
+    cin >> lecturaConsola;
+    longitud = lecturaConsola.length();
+
+    string lineaBin= "";
+
+    for (int i = 0; i < longitud; i++) {
+        char aux[9];
+        convIntBin(aux, lecturaConsola[i]);
+        lineaBin+= aux;
+    }
+
+    //cout << "La contraseña en binario es: " << lineaBin << endl;
+
+
+    n = numeroLegal();
+
+    int tamaño= lineaBin.length();
+    if(tamaño < n){
+        for(int x = tamaño; x < n ; x++)
+            lineaBin += "0";
+    }
+
+    if((tamaño % n) != 0){
+        for(int x = (tamaño % n); x < n ; x++)
+            lineaBin += "0";
+    }
+
+    string contraseña_encriptada;
+
+    contraseña_encriptada= codificarM2(lineaBin, n);
+
+    EscribirContraseñasobreArchivo(contraseña_encriptada, nombre_nuevo_archivo);
+
+    longitud_cedula.clear();
+    longitud_cedula.shrink_to_fit();
+    longitd_clave.clear();
+    longitd_clave.shrink_to_fit();
+    longitud_saldo.clear();
+    longitud_saldo.shrink_to_fit();
+
+    return nombre_nuevo_archivo;
+}
+
 
 #endif // MENU_H
