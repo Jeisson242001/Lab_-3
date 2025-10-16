@@ -3,6 +3,43 @@
 #include <vector>
 #include "codificaciones.h"
 #include <string>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+bool CargarMetaDesdeArchivo(const std::string& nombreArchivo, int& semilla, int& len_admin) {
+    std::ifstream f(nombreArchivo);
+    if(!f.is_open()) return false;
+    std::string linea0;
+    if(!std::getline(f, linea0)){ f.close(); return false; }
+    f.close();
+
+    if(linea0.rfind("META ", 0) != 0) {
+        return false; // No empieza con "META ", asumimos formato viejo
+    }
+
+    // Parseo sencillo: META n=4 len_admin=4
+    std::istringstream iss(linea0);
+    std::string meta, n_token, len_token;
+    if(!(iss >> meta >> n_token >> len_token)) return false;
+
+    auto get_val = [](const std::string& tok, const std::string& key)->int{
+        auto pos = tok.find('=');
+        if(pos == std::string::npos) return -1;
+        std::string k = tok.substr(0,pos);
+        std::string v = tok.substr(pos+1);
+        if(k != key) return -1;
+        try { return std::stoi(v); } catch(...) { return -1; }
+    };
+
+    int n = get_val(n_token, "n");
+    int la = get_val(len_token, "len_admin");
+    if(n <= 0 || la <= 0) return false;
+
+    semilla = n;
+    len_admin = la;
+    return true;
+}
 
 int NumeroLineasArchivo(string nombreArchivo){
     string linea;
@@ -15,6 +52,7 @@ int NumeroLineasArchivo(string nombreArchivo){
     archivo.close();
     return numero_linea_actual;
 }
+
 
 bool comprobarLectura( string nombredelarchivo){
     ifstream archivo;
@@ -42,6 +80,7 @@ string leerUnaLinea(int numero_linea_deseada, string nombreArchivo){
         numero_linea_actual++;
     }
 }
+
 string ponerCeros(string lineaBinString, int n){
     if(lineaBinString.length() < n){
         for(int x = lineaBinString.length(); x < n ; x++)
@@ -54,6 +93,7 @@ string ponerCeros(string lineaBinString, int n){
     }
     return lineaBinString;
 }
+
 
 
 bool verificacionAdministrador(string nombreArchivo, int semilla_de_codificacion, int longitud){
