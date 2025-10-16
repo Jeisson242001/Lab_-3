@@ -384,5 +384,58 @@ void CrearUsuario(string nombre_archivo, int& semilla, vector<int>& longitud_ced
     archivo.close();
 }
 
+string ValidarCedula_o_Saldo(string nombre){
+    string version_string;
+    long long int numero;
+    bool bandera=true;
+    while(bandera){
+        cout <<"Ingrese "<<nombre<<" (Solo ingrese numeros): ";
+        try{
+            if(!(cin >> numero)){
+                throw 1;
+            }else{
+                if(VerificarNumeroPositivo(numero)){
+                    version_string= to_string(numero);
+                    bandera=false;
+                }else{
+                    cout<<"Solo puede ingresar numeros positivos"<<endl;
+                }
+
+            }
+        }catch(int error){
+            if(error==1){
+                cout<<"\n Ingresate una opcion invalida. Solo puede ingresar numeros\n"<<endl;
+                cin.clear();
+                cin.ignore(255, '\n');
+            }
+        }
+    }
+    return version_string;
+}
+
+
+bool ValidacionUsuario(string nombre_del_archivo, int semilla, int& numero_de_linea_cedula,
+                       vector<int> longitud, int& contador){
+    string cedula = ValidarCedula_o_Saldo("la cedula");
+
+    int numero_lineas_del_archivo = NumeroLineasArchivo(nombre_del_archivo);
+    int start = PrimeraLineaUsuarios(nombre_del_archivo);
+
+    contador = 0; // cuenta usuarios, no líneas
+    for(int numero_linea_actual = start; numero_linea_actual < numero_lineas_del_archivo; numero_linea_actual += 3){
+        string linea = leerUnaLinea(numero_linea_actual, nombre_del_archivo);
+        linea = decodificarM2(linea, semilla);
+        linea = quitarCeros(linea, longitud[contador]);
+        linea = convBinInt(linea);
+
+        if(linea == cedula){
+            numero_de_linea_cedula = numero_linea_actual; // <- cédula encontrada
+            return true;
+        }
+        contador += 1; // siguiente usuario
+    }
+    return false;
+}
+
 
 #endif // MENU_H
