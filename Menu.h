@@ -44,8 +44,8 @@ bool CargarMetaDesdeArchivo(const std::string& nombreArchivo, int& semilla, int&
 int NumeroLineasArchivo(string nombreArchivo){
     string linea;
     int numero_linea_actual=0;
-    ifstream archivo;
-    archivo.open(nombreArchivo);
+    ifstream archivo(nombreArchivo);
+    if(!archivo.is_open()) return 0;
     while(getline(archivo, linea)){
         numero_linea_actual++;
     }
@@ -70,8 +70,8 @@ bool comprobarLectura( string nombredelarchivo){
 string leerUnaLinea(int numero_linea_deseada, string nombreArchivo){
     string linea;
     int numero_linea_actual=0;
-    ifstream archivo;
-    archivo.open(nombreArchivo);
+    ifstream archivo(nombreArchivo);
+    if(!archivo.is_open()) return "";
     while(getline(archivo, linea)){
         if(numero_linea_actual==numero_linea_deseada){
             archivo.close();
@@ -79,36 +79,57 @@ string leerUnaLinea(int numero_linea_deseada, string nombreArchivo){
         }
         numero_linea_actual++;
     }
+    archivo.close();
+    return ""; // <- agregado
 }
 
-string ponerCeros(string lineaBinString, int n){
-    if(lineaBinString.length() < n){
-        for(int x = lineaBinString.length(); x < n ; x++)
-            lineaBinString += "0";
+int PrimeraLineaUsuarios(const std::string& nombreArchivo){
+    std::string linea0 = leerUnaLinea(0, nombreArchivo);
+    // Si hay META en la 0, usuarios empiezan en la 2; si no, en la 1
+    if(!linea0.empty() && linea0.rfind("META ", 0) == 0){
+        return 2;
     }
+    return 1;
+}
 
-    if((lineaBinString.length() % n) != 0){
-        for(int x = (lineaBinString.length()%n); x < n ; x++)
-            lineaBinString += "0";
+string ponerCeros(string s, int n){
+    if(n <= 0) return s;
+    if((int)s.length() < n){
+        s.append(n - s.length(), '0');
     }
-    return lineaBinString;
+    int rem = s.length() % n;
+    if(rem != 0){
+        s.append(n - rem, '0');
+    }
+    return s;
 }
 
 
 
 bool verificacionAdministrador(string nombreArchivo, int semilla_de_codificacion, int longitud){
-    string contraseña_ingresada = " ";
-    string contraseña_guardada= leerUnaLinea(0, nombreArchivo);
-    cin >> contraseña_ingresada;
-    contraseña_guardada= decodificarM2(contraseña_guardada, semilla_de_codificacion);
-    contraseña_guardada= quitarCeros(contraseña_guardada, longitud);
-    contraseña_guardada= convBinInt(contraseña_guardada);
-    if(contraseña_guardada==contraseña_ingresada){
-        return true;
-    }else{
+    string contraseña_ingresada;
+    string contraseña_guardada = leerUnaLinea(1, nombreArchivo);
+    // OJO: con META, la contraseña está en la línea 1.
+    // Si no hay META, contraseña está en línea 0. Intentamos fallback:
+    if(contraseña_guardada.empty()){
+        contraseña_guardada = leerUnaLinea(0, nombreArchivo);
+    }
+
+    if(contraseña_guardada.empty()){
+        std::cerr << "No se pudo leer la contraseña del admin del archivo.\n";
         return false;
     }
+
+    cout << "Ingrese la contraseña: ";
+    cin >> contraseña_ingresada;
+
+    contraseña_guardada = decodificarM2(contraseña_guardada, semilla_de_codificacion);
+    contraseña_guardada = quitarCeros(contraseña_guardada, longitud);
+    contraseña_guardada = convBinInt(contraseña_guardada);
+
+    return (contraseña_guardada == contraseña_ingresada);
 }
+
 
 void EscribirContraseñasobreArchivo(string line, string nombreArchivo){
     ofstream archivo;
@@ -217,7 +238,19 @@ void ComprobacionDeArchivo(string& nombre_del_archivo, bool& bandera, int &semil
         cout <<"\nVerficacion de los archivos del sistema...\n"<<endl;
         bandera= comprobarLectura(nombre_del_archivo);
         if(bandera){
-            inicio= false;
+
+            int semilla_archivo = semilla;   // por si no hay META, mantenemos lo recibido
+            int len_admin_arch  = longitud;
+            if(CargarMetaDesdeArchivo(nombre_del_archivo, semilla_archivo, len_admin_arch)) {
+                semilla  = semilla_archivo;
+                longitud = len_admin_arch;
+                std::cout << "META detectada. Semilla=" << semilla << " len_admin=" << longitud << "\n";
+            } else {
+                std::cout << "Archivo sin META. Se usan valores actuales (semilla="
+                          << semilla << ", len_admin=" << longitud << ").\n";
+            }
+            inicio = false;
+
         }else{
             cout << "Desea crear un archivo? (Ingrese s(si) o n(no)): "; cin >>verificar_tamaño;
             if(verificar_tamaño.length() > 1){
@@ -437,5 +470,88 @@ bool ValidacionUsuario(string nombre_del_archivo, int semilla, int& numero_de_li
     return false;
 }
 
+
+char VerificarTamaño(){
+    char respuesta= ' ';
+    bool var_control=true;
+    while(var_control){
+        string verificar_tamaño;
+        cin>> verificar_tamaño;
+        if(verificar_tamaño.length() > 1){
+            cout << "Solo puedes ingresar una letra: ";
+        }else if (verificar_tamaño.length() ==1 && verificar_tamaño != "\n"){
+            respuesta= verificar_tamaño[0];
+            var_control=false;
+        }
+    }
+    return respuesta;
+}
+
+bool VerificarSaldoRetirar(int& saldo_entero, int numero_linea_deseada, string nombreArchivo, int semilla, int longitud, long long int cantidad_a_retirar){
+    string saldo_string=leerUnaLinea(numero_linea_deseada, nombreArchivo);
+    saldo_string= decodificarM2(saldo_string, semilla);
+    saldo_string= quitarCeros(saldo_string, longitud);
+    saldo_string= convBinInt(saldo_string);
+    saldo_entero= stoi(saldo_string);
+    if((saldo_entero-cantidad_a_retirar-1000) < 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+bool VerificarSaldo(int& saldo_entero, int numero_linea_deseada, string nombreArchivo, int semilla, int longitud){
+
+    string saldo_string = leerUnaLinea(numero_linea_deseada, nombreArchivo);
+    saldo_string = decodificarM2(saldo_string, semilla);
+    saldo_string = quitarCeros(saldo_string, longitud);
+    saldo_string = convBinInt(saldo_string);
+    saldo_entero = stoi(saldo_string);
+
+    if(saldo_entero<= 1000){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+string EncriptarNuevosValores(int valor, int semilla){
+    string version_string_saldo= to_string(valor);
+    int longitud = version_string_saldo.length();
+    string lineaBina= "";
+    for (int i = 0; i < longitud; i++) {
+        char aux[9];
+        convIntBin(aux, version_string_saldo[i]);
+        lineaBina+= aux;
+    }
+    lineaBina= ponerCeros(lineaBina, semilla);
+    version_string_saldo= codificarM2(lineaBina, semilla);
+    return version_string_saldo;
+}
+
+void ActualizarSaldo(int valorSaldo, string nombreArchivo, int linea_a_cambiar, int semilla, vector<int>&vectorsaldo, int posicion){
+
+    ifstream archivo_lectura(nombreArchivo);
+    ofstream archivo_escritura("temp.txt");
+    string versionstring= to_string(valorSaldo);
+    int longitud= versionstring.length();
+    vectorsaldo[posicion]= longitud;
+    string linea;
+    int contador=0;
+    string nueva_linea= EncriptarNuevosValores(valorSaldo, semilla);
+    while(getline(archivo_lectura, linea)){
+        if (contador == linea_a_cambiar){
+            archivo_escritura<<nueva_linea<<endl;
+        }else{
+            archivo_escritura<<linea<<endl;
+        }
+        contador++;
+    }
+    archivo_escritura.close();
+    archivo_lectura.close();
+
+    remove(nombreArchivo.c_str());
+    rename("temp.txt", nombreArchivo.c_str());
+}
 
 #endif // MENU_H
